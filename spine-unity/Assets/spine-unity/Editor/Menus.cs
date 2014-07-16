@@ -45,7 +45,7 @@ public class Menus {
 		CreateAsset<SkeletonDataAsset>("New SkeletonData");
 	}
 	
-	static private void CreateAsset <T> (String name) where T : ScriptableObject {
+	static private T CreateAsset <T> (String name) where T : ScriptableObject {
 		var dir = "Assets/";
 		var selected = Selection.activeObject;
 		if (selected != null) {
@@ -53,23 +53,53 @@ public class Menus {
 			if (assetDir.Length > 0 && Directory.Exists(assetDir)) dir = assetDir + "/";
 		}
 		ScriptableObject asset = ScriptableObject.CreateInstance<T>();
+		
 		AssetDatabase.CreateAsset(asset, dir + name + ".asset");
 		AssetDatabase.SaveAssets();
 		EditorUtility.FocusProjectWindow();
-		Selection.activeObject = asset;
+		return asset as T;
 	}
-
+	
 	[MenuItem("GameObject/Create Other/Spine SkeletonRenderer")]
 	static public void CreateSkeletonRendererGameObject () {
 		GameObject gameObject = new GameObject("New SkeletonRenderer", typeof(SkeletonRenderer));
 		EditorUtility.FocusProjectWindow();
 		Selection.activeObject = gameObject;
 	}
-
+	
 	[MenuItem("GameObject/Create Other/Spine SkeletonAnimation")]
 	static public void CreateSkeletonAnimationGameObject () {
 		GameObject gameObject = new GameObject("New SkeletonAnimation", typeof(SkeletonAnimation));
 		EditorUtility.FocusProjectWindow();
 		Selection.activeObject = gameObject;
+	}
+	
+	[MenuItem("Assets/Create/SpineData")]
+	static public void CreateSpineData() {
+		UnityEngine.Object selected = Selection.activeObject;
+		string skeStr = "skeleton";
+		string pngExt = ".png";
+		string atlasExt = ".atlas.txt";
+		string jsonExt = ".json.txt";
+		string path = "/";
+		if(selected != null)
+		{
+			var material = new Material (Shader.Find("Spine/Skeleton"));
+			string assetDir = AssetDatabase.GetAssetPath(selected.GetInstanceID());
+			string[] arr = assetDir.Split('/');
+			string name = arr[arr.Length - 1];
+			AssetDatabase.CreateAsset(material, assetDir + path +  name + ".mat");
+			AssetDatabase.SaveAssets();
+			
+			material.mainTexture = Resources.LoadAssetAtPath(assetDir + path + skeStr + pngExt, typeof(Texture)) as Texture;
+			AtlasAsset atlasAsset = CreateAsset<AtlasAsset>(name + ".atlas");
+			atlasAsset.atlasFile = Resources.LoadAssetAtPath(assetDir + path + skeStr + atlasExt, typeof(TextAsset)) as TextAsset;
+			atlasAsset.materials = new Material[1];
+			atlasAsset.materials[0] = material;
+			
+			SkeletonDataAsset dataAsset = CreateAsset<SkeletonDataAsset>(name + ".ske");
+			dataAsset.skeletonJSON = Resources.LoadAssetAtPath(assetDir + path + skeStr + jsonExt,typeof(TextAsset)) as TextAsset;
+			dataAsset.atlasAsset= atlasAsset;
+		}
 	}
 }
